@@ -16,7 +16,7 @@ import { VolumetricPlayMode } from '../../constants/VolumetricPlayMode'
 import UpdateableObject3D from '../../classes/UpdateableObject3D'
 import { addError, removeError } from '../ErrorFunctions'
 
-type VolumetricObject3D = UpdateableObject3D & {
+export type VolumetricObject3D = UpdateableObject3D & {
   userData: {
     player: typeof import('volumetric/player').default.prototype
   }
@@ -71,7 +71,7 @@ export const updateVolumetric: ComponentUpdateFunction = async (
         renderer: Engine.renderer,
         paths,
         playMode: component.playMode as any,
-        autoplay: true,
+        autoplay: false,
         onMeshBuffering: (_progress) => {},
         onFrameShow: () => {}
       })

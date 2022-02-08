@@ -7,6 +7,8 @@ import { PortalComponent } from '../components/PortalComponent'
 import { dispatchLocal } from '../../networking/functions/dispatchFrom'
 import { EngineActions } from '../../ecs/classes/EngineService'
 import { isClient } from '../../common/functions/isClient'
+import { Object3DComponent } from '../components/Object3DComponent'
+import { VolumetricObject3D } from '../functions/loaders/VolumetricFunctions'
 
 /**
  * @author Hamza Mushtaq <github.com/hamzzam>
@@ -51,6 +53,10 @@ export default async function TriggerSystem(world: World) {
         }
       }
       if (targetObj) {
+        if (onEnter == 'play') {
+          const obj3d = getComponent(targetObj.entity, Object3DComponent).value as VolumetricObject3D
+          obj3d?.userData?.player?.play()
+        }
         if (targetObj[onEnter]) {
           targetObj[onEnter]()
         } else if (targetObj.execute) {
