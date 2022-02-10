@@ -715,11 +715,14 @@ export async function handleWebRtcResumeProducer(socket, data, callback): Promis
     // await producer.resume();
     const world = Engine.currentWorld
     if (userId != null && world.clients.has(userId)) {
+      console.log('userClient', world.clients.get(userId))
       world.clients.get(userId)!.media![producer.appData.mediaTag].paused = false
       world.clients.get(userId)!.media![producer.appData.mediaTag].globalMute = false
+      console.log('clients', world.clients.entries())
       const hostClient = Array.from(world.clients.entries()).find(([, client]) => {
         return client.media && client.media![producer.appData.mediaTag]?.producerId === producerId
       })!
+      console.log('hostClient', hostClient)
       hostClient[1].socket!.emit(MessageTypes.WebRTCResumeProducer.toString(), producer.id)
     }
   }
