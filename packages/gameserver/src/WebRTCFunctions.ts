@@ -72,6 +72,8 @@ export const sendNewProducer =
     if (selfClient?.socketId != null) {
       for (const [, client] of world.clients) {
         console.info(`Sending media for ${userId}`)
+        console.log('client to potentially send to', client)
+        console.log('producer to notify about', producer, producer.id)
         client?.media &&
           Object.entries(client.media!).map(([subName, subValue]) => {
             if (
