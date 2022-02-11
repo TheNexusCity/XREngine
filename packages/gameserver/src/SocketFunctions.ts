@@ -36,6 +36,7 @@ function isNullOrUndefined<T>(obj: T | null | undefined): obj is null | undefine
 }
 
 export const setupSocketFunctions = (transport: SocketWebRTCServerTransport) => async (socket: Socket) => {
+  console.log('setupSocketFunctions', socket)
   const app = transport.app
 
   if (!accessEngineState().joinedWorld.value)

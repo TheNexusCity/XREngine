@@ -215,6 +215,7 @@ export async function onConnectToMediaInstance(networkTransport: SocketWebRTCCli
     closeConsumer(networkTransport, consumer.consumer)
   )
 
+  console.log('Creating router and transports for new media instance')
   await initRouter(networkTransport)
   await Promise.all([initSendTransport(networkTransport), initReceiveTransport(networkTransport)])
   const { userIds } = await networkTransport.request(MessageTypes.WebRTCRequestNearbyUsers.toString())
@@ -255,6 +256,7 @@ export async function createDataProducer(
 // appropriate to the transport's direction
 
 export async function createTransport(networkTransport: SocketWebRTCClientTransport, direction: string) {
+  console.log('createTransport', networkTransport, direction)
   const request = networkTransport.request
   if (request === null) return null!
   const { channelId, channelType } = getChannelTypeIdFromTransport(networkTransport)
@@ -278,6 +280,7 @@ export async function createTransport(networkTransport: SocketWebRTCClientTransp
     transport = await networkTransport.mediasoupDevice.createSendTransport(transportOptions)
   else throw new Error(`bad transport 'direction': ${direction}`)
 
+  console.log('Created transport', transport)
   // mediasoup-client will emit a connect event when media needs to
   // start flowing for the first time. send dtlsParameters to the
   // server, then call callback() on success or errback() on failure.
@@ -309,6 +312,7 @@ export async function createTransport(networkTransport: SocketWebRTCClientTransp
         // up a server-side producer object, and get back a
         // producer.id. call callback() on success or errback() on
         // failure.
+        console.log('Calling sendTrack', transportOptions, appData)
         const { error, id } = await networkTransport.request(MessageTypes.WebRTCSendTrack.toString(), {
           transportId: transportOptions.id,
           kind,

@@ -495,6 +495,7 @@ export async function handleWebRtcCloseProducer(socket, data, callback): Promise
 }
 
 export async function handleWebRtcSendTrack(networkTransport, socket, data, callback): Promise<any> {
+  console.log('handleWebRtcSendTrack', networkTransport, socket, data)
   const userId = getUserIdFromSocketId(socket.id)
   const { transportId, kind, rtpParameters, paused = false, appData } = data,
     transport: any = Network.instance.transports[transportId] as Transport
@@ -508,6 +509,8 @@ export async function handleWebRtcSendTrack(networkTransport, socket, data, call
       paused,
       appData: { ...appData, peerId: userId, transportId }
     })
+
+    console.log('new producer', producer)
 
     const routers = networkTransport.routers[`${appData.channelType}:${appData.channelId}`]
     const currentRouter = routers.find((router) => router.id === (transport as any).internal.routerId)!
