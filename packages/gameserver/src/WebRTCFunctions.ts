@@ -704,9 +704,12 @@ export async function handleWebRtcConsumerSetLayers(socket, data, callback): Pro
 
 export async function handleWebRtcResumeProducer(socket, data, callback): Promise<any> {
   const userId = getUserIdFromSocketId(socket.id)
+  console.log('handleWebRtcResumeProducer')
+  console.log('userId', userId)
   const { producerId } = data,
     producer = MediaStreams.instance?.producers.find((p) => p.id === producerId)
-  console.info('resume-producer', producer?.appData)
+  console.log('producerId', producerId)
+  console.info('resume-producer', producer, producer?.appData)
   if (producer != null) {
     Network.instance.mediasoupOperationQueue.add({
       object: producer,
