@@ -8,6 +8,7 @@ import { Application } from '../../../declarations'
  * @author Vyacheslav Solovjov
  */
 export class StaticResource extends Service {
+  app: Application
   public docs: any
 
   constructor(options: Partial<SequelizeServiceOptions>, app: Application) {
@@ -34,8 +35,18 @@ export class StaticResource extends Service {
   async find(params?: Params): Promise<any> {
     if (params?.query?.getAvatarThumbnails === true) {
       delete params.query.getAvatarThumbnails
-      const result = (await super.find(params)) as Paginated<any>
-      for (const item of result.data) {
+      const result = await super.Model.findAndCountAll({
+        limit: params.query.$limit,
+        skip: params.query.$skip,
+        select: params.query.$select,
+        where: {
+          staticResourceType: params.query?.staticResourceType,
+          userId: params.query?.userId
+        },
+        raw: true,
+        nest: true
+      })
+      for (const item of result.rows) {
         item.thumbnail = await super.Model.findOne({
           where: {
             name: item.name,
@@ -43,7 +54,10 @@ export class StaticResource extends Service {
           }
         })
       }
-      return result
+      return {
+        data: result.rows,
+        total: result.total
+      }
     } else return super.find(params)
   }
 }
