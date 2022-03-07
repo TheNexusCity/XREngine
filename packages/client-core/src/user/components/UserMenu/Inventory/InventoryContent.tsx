@@ -82,7 +82,7 @@ const useStyles = makeStyles({
   },
   inventoryWrapper: {
     display: 'flex',
-    flexWrap: 'wrap',
+    flexWrap: 'wrap'
   },
   inventoryItem: {
     margin: 15,
@@ -93,7 +93,7 @@ const useStyles = makeStyles({
     width: '25%',
     height: '100px',
     '&:hover': {
-      cursor: 'pointer',
+      cursor: 'pointer'
     }
   },
   inventoryItemEmpty: {
@@ -104,15 +104,15 @@ const useStyles = makeStyles({
     boxShadow: '0px 11.23762321472168px 11.23762321472168px 0px #00000040',
     backdropFilter: 'blur(50px)',
     width: '25%',
-    height: '100px',
+    height: '100px'
   },
   invenPaginationBtn: {
     '&:hover': {
-      cursor: 'pointer',
+      cursor: 'pointer'
     },
     '&.disable': {
       opacity: '0.3'
-    },
+    }
   }
 })
 
@@ -140,32 +140,32 @@ const InventoryContent = ({
     anchorEl: null,
     selectedtype: '',
     inventory: [],
-    currentPage: 1,
+    currentPage: 1
   })
   const { url, metadata, userid, selectedid, anchorEl, selectedtype, inventory } = state
   const prevState = usePrevious({ selectedtype })
   // const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl)
 
-  const totalPage = Math.ceil( coinData.length / inventoryLimit )
+  const totalPage = Math.ceil(coinData.length / inventoryLimit)
 
   // Regarding dragging inventory action.
-  const [items, setItems] = useState([ ...coinData ])
-  const [ draggingSlotId, setDraggingSlot ] = useState(null)
-  const getItemDataInSlot = (slot) => items.find((item) => item.slot === slot);
+  const [items, setItems] = useState([...coinData])
+  const [draggingSlotId, setDraggingSlot] = useState(null)
+  const getItemDataInSlot = (slot) => items.find((item) => item.slot === slot)
 
   const swapItemSlots = (oldSlot, newSlot) => {
     setItems((currentState) => {
-      let newInventory = [...currentState];
-      let oldIndex: any, newIndex: any;
-      
+      let newInventory = [...currentState]
+      let oldIndex: any, newIndex: any
+
       // Finding the old ones..
 
       newInventory.forEach((item, index) => {
-        if(item.slot === oldSlot) {
-          oldIndex = index;
+        if (item.slot === oldSlot) {
+          oldIndex = index
         } else if (item.slot === newSlot) {
-          newIndex = index;
+          newIndex = index
         }
       })
 
@@ -178,31 +178,31 @@ const InventoryContent = ({
     })
   }
 
-
   const moveItemToSlot = (oldSlot, newSlot) => {
-    console.log(`move slot`, oldSlot, newSlot);
+    console.log(`move slot`, oldSlot, newSlot)
 
     setItems((currentState) => {
-      let newInventory = [...currentState];
-      let targetIndex: any;
+      let newInventory = [...currentState]
+      let targetIndex: any
       newInventory.forEach((item, index) => {
         if (item.slot === oldSlot) {
-          targetIndex = index;
+          targetIndex = index
         }
-      });
-      console.error('targetIndex', targetIndex);
-      newInventory[targetIndex] = { ...newInventory[targetIndex], slot: newSlot };
+      })
+      console.error('targetIndex', targetIndex)
+      newInventory[targetIndex] = { ...newInventory[targetIndex], slot: newSlot }
       return [...newInventory]
     })
   }
 
   const onInventoryItemDragged = ({ detail: eventData }: any) => {
-    const oldSlot = parseInt(eventData.slot), newSlot = parseInt(eventData.destination.slot);
+    const oldSlot = parseInt(eventData.slot),
+      newSlot = parseInt(eventData.destination.slot)
 
-    if (eventData.destination.type === "empty-slot") {
-      moveItemToSlot(oldSlot, newSlot);
-    } else if (eventData.destination.type === "item") {
-      swapItemSlots(oldSlot, newSlot);
+    if (eventData.destination.type === 'empty-slot') {
+      moveItemToSlot(oldSlot, newSlot)
+    } else if (eventData.destination.type === 'item') {
+      swapItemSlots(oldSlot, newSlot)
     }
   }
 
@@ -241,17 +241,16 @@ const InventoryContent = ({
     }))
   }
   const getCurrentSlots = () => {
-    const res: any = [];
-    const startIndex = (state.currentPage - 1) * inventoryLimit;
-    const endIndex = state.currentPage * inventoryLimit;
-    for( let i = startIndex; i < endIndex; i++ )
-      res.push(i);
+    const res: any = []
+    const startIndex = (state.currentPage - 1) * inventoryLimit
+    const endIndex = state.currentPage * inventoryLimit
+    for (let i = startIndex; i < endIndex; i++) res.push(i)
 
-    return res;
+    return res
   }
 
   useEffect(() => {
-    document.addEventListener("inventoryItemDragged", onInventoryItemDragged)
+    document.addEventListener('inventoryItemDragged', onInventoryItemDragged)
 
     if (data.length !== 0) {
       setState((prevState: any) => ({
@@ -264,7 +263,7 @@ const InventoryContent = ({
     }
 
     return () => {
-      document.removeEventListener("inventoryItemDragged", onInventoryItemDragged);
+      document.removeEventListener('inventoryItemDragged', onInventoryItemDragged)
 
       setState({
         url: '',
@@ -274,7 +273,7 @@ const InventoryContent = ({
         anchorEl: null,
         selectedtype: '',
         inventory: [],
-        currentPage: 1,
+        currentPage: 1
       }) // This worked for me
     }
   }, [])
@@ -328,45 +327,40 @@ const InventoryContent = ({
         <Stack justifyContent="center" sx={{ width: '90%' }}>
           <Typography className={`${classes.title} ${classes.titlesize}`}>Inventory</Typography>
           <Stack direction="row" justifyContent="center" className={`${classes.inventoryWrapper}`}>
-            <Stack sx={{ marginTop: '15px' }}>
+            <Stack sx={{ marginTop: '15px', width: '100%' }}>
               {items.length !== 0 ? (
                 <Stack>
                   {/* drag & drop API integration */}
-                  <DragAndDropAPI
-                    activeDraggedSlot={draggingSlotId}
-                    setActiveDraggedSlot={setDraggingSlot}
-                  />
+                  <DragAndDropAPI activeDraggedSlot={draggingSlotId} setActiveDraggedSlot={setDraggingSlot} />
 
                   {/* inventory grid */}
-                  <Stack direction="row" justifyContent="center" flexWrap={'wrap'} sx={{ position: 'relative' }} className={`inventory`}>
-                    {
-                      getCurrentSlots().map((slot) => (
-                        <ItemSlot
-                          slot={slot}
-                          value={ getItemDataInSlot(slot) || null }
-                          key={slot}
-                        />
-                      ))
-                    }
+                  <Stack
+                    direction="row"
+                    justifyContent="center"
+                    flexWrap={'wrap'}
+                    sx={{ position: 'relative' }}
+                    className={`inventory`}
+                  >
+                    {getCurrentSlots().map((slot) => (
+                      <ItemSlot slot={slot} value={getItemDataInSlot(slot) || null} key={slot} />
+                    ))}
                   </Stack>
                   {/* pagination */}
                   <Stack direction="row" justifyContent="space-between" alignItems="center">
                     <IconButton
                       sx={{ svg: { color: 'white' } }}
-                      className={`${classes.invenPaginationBtn} ${ state.currentPage <= 1 ? 'disable' : '' }`}
+                      className={`${classes.invenPaginationBtn} ${state.currentPage <= 1 ? 'disable' : ''}`}
                       onClick={() => goToPrevPage()}
-                      disabled={ state.currentPage <= 1 ? true : false }
+                      disabled={state.currentPage <= 1 ? true : false}
                     >
                       <ArrowBackIos />
                     </IconButton>
-                    <Typography>
-                      Page {`${state.currentPage} / ${ totalPage }`}
-                    </Typography>
+                    <Typography>Page {`${state.currentPage} / ${totalPage}`}</Typography>
                     <IconButton
                       sx={{ svg: { color: 'white' } }}
-                      className={`${classes.invenPaginationBtn} ${ state.currentPage >= totalPage ? 'disable' : '' }`}
+                      className={`${classes.invenPaginationBtn} ${state.currentPage >= totalPage ? 'disable' : ''}`}
                       onClick={() => goToNextPage()}
-                      disabled={ state.currentPage >= totalPage ? true : false }
+                      disabled={state.currentPage >= totalPage ? true : false}
                     >
                       <ArrowForwardIos />
                     </IconButton>

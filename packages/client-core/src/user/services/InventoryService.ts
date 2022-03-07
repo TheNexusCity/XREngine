@@ -7,7 +7,12 @@ import { RelationshipSeed } from '@xrengine/common/src/interfaces/Relationship'
 import { ethers } from 'ethers'
 import Moralis from 'moralis'
 import axios from 'axios'
+import { Principal } from '@dfinity/principal'
+import { NFTIDL } from '../../util/nft.did'
 
+/**
+ * Moralis SDK config - ERC721
+ */
 const serverUrl = 'https://s0vkti4ccvl3.usemoralis.com:2053/server' // Moralis Server Url here
 const appId = 'DFDqRRGNHvPpOFmVqNSEkNFtSYUkQfLpY4UOZyw7' // Moralis Server App ID here
 Moralis.start({ serverUrl, appId })
@@ -126,34 +131,74 @@ export const InventoryService = {
 
       const inventory_items: any = []
 
+      /**
+       * ERC721 NFT Sync
+       */
+
       // A Web3Provider wraps a standard Web3 provider, which is
       // what MetaMask injects as window.ethereum into each page
-      const provider = new ethers.providers.Web3Provider((window as any).ethereum)
+      // const provider = new ethers.providers.Web3Provider((window as any).ethereum)
 
-      // MetaMask requires requesting permission to connect users accounts
-      await provider.send('eth_requestAccounts', [])
+      // // MetaMask requires requesting permission to connect users accounts
+      // await provider.send('eth_requestAccounts', [])
 
       // The MetaMask plugin also allows signing transactions to
       // send ether and pay to change state within the blockchain.
       // For this, you need the account signer...
-      const signer = provider.getSigner()
+      // const signer = provider.getSigner()
 
-      const walletAddress = await signer.getAddress()
+      // const walletAddress = await signer.getAddress()
 
-      const options = { chain: 'rinkeby', address: walletAddress } as any
-      const myNftData = await Moralis.Web3API.account.getNFTs(options)
+      // const options = { chain: 'rinkeby', address: walletAddress } as any
+      // const myNftData = await Moralis.Web3API.account.getNFTs(options)
 
-      myNftData.result?.forEach(async (item) => {
-        if (item.metadata) {
-          const meta = JSON.parse(item.metadata)
-          inventory_items.push({
-            ...invenItem,
-            user_inventory: { quantity: 1 },
-            slot: inventory_items.length,
-            name: meta.name,
-            url: meta.image
-          })
-        }
+      // myNftData.result?.forEach(async (item) => {
+      //   if (item.metadata) {
+      //     const meta = JSON.parse(item.metadata)
+      //     inventory_items.push({
+      //       ...invenItem,
+      //       user_inventory: { quantity: 1 },
+      //       slot: inventory_items.length,
+      //       name: meta.name,
+      //       url: meta.image
+      //     })
+      //   }
+      // })
+
+      /**
+       * DIP721 NFT Sync
+       */
+      const nftCanisterId = 'vlhm2-4iaaa-aaaam-qaatq-cai'
+
+      const hasAllowed = await (window as any).ic?.plug?.requestConnect({
+        whitelist: [nftCanisterId] // whitelisting canister ID's for plug
+      })
+      if (!hasAllowed) {
+        console.error('allow the canisters')
+      }
+
+      const wallet = await (window as any).ic?.plug?.getPrincipal()
+      const walletAddress = wallet.toText()
+
+      const nftActor = await (window as any).ic?.plug?.createActor({
+        canisterId: nftCanisterId,
+        interfaceFactory: NFTIDL.factory
+      })
+
+      const name = await nftActor?.nameDip721()
+      const symbol = await nftActor?.symbolDip721()
+
+      // My NFTS
+      const myNFTs = await nftActor?.getMetadataForUserDip721(Principal.fromText(walletAddress))
+
+      myNFTs.forEach((item) => {
+        inventory_items.push({
+          ...invenItem,
+          user_inventory: { quantity: 1 },
+          slot: inventory_items.length,
+          name: name + item.token_id,
+          url: item.metadata_desc[0].key_val_data[4].val.TextContent
+        })
       })
 
       dispatch(InventoryAction.setinventorydata(inventory_items))
