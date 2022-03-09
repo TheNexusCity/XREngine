@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import Typography from '@mui/material/Typography'
 import { Stack } from '@mui/material'
 import makeStyles from '@mui/styles/makeStyles'
+import styles from '../UserMenu.module.scss'
 
 const useStyles = makeStyles({
   inventoryItem: {
@@ -11,7 +12,7 @@ const useStyles = makeStyles({
     border: '2px solid rgba(137, 137, 242, 0.53)',
     boxShadow: '0px 11.23762321472168px 11.23762321472168px 0px #00000040',
     width: '25%',
-    height: '100px',
+    height: '120px',
     '&:hover': {
       cursor: 'pointer'
     }
@@ -24,7 +25,7 @@ const useStyles = makeStyles({
     boxShadow: '0px 11.23762321472168px 11.23762321472168px 0px #00000040',
     backdropFilter: 'blur(50px)',
     width: '25%',
-    height: '100px'
+    height: '120px'
   },
   inventoryContent: {
     '&.being-dragged': {
@@ -44,7 +45,7 @@ const useStyles = makeStyles({
   },
   inventoryItemPreview: {
     width: '90%',
-    aspectRatio: '1.4'
+    aspectRatio: '1.2'
   },
   inventoryItemName: {
     wordBreak: 'break-all',
@@ -82,7 +83,15 @@ const MainComponent = (props: any) => {
               <img className={`${classes.inventoryItemPreview}`} src={value.url} alt="" />
             ) : null}
 
-            <Typography className={`${classes.inventoryItemName}`}>{`${value.name}`}</Typography>
+            <div className={value.name.length > 0 ? styles.cssMarquee : styles.cssMarquee}>
+              <Typography className={`${classes.inventoryItemName}`}>{`${value.name}`}</Typography>
+            </div>
+
+            {/* <video className={`${classes.inventoryItemPreview}`} src={`https://gateway.pinata.cloud/ipfs/QmaqaX1fjJeQdGLxyox5XPFHfk5MG2syGNtS2jn1V8oLz2`} muted autoPlay loop />
+
+            <div className={ value.name.length > 0 ? styles.cssMarquee : styles.cssMarquee }>
+              <Typography className={`${classes.inventoryItemName}`}>{`Crowns #${value.name}`}</Typography>
+            </div> */}
           </div>
         </div>
       </Stack>

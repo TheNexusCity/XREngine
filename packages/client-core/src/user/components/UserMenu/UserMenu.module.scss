@@ -1469,3 +1469,27 @@
         }
     }
 }
+
+@keyframes cssmarquee {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+.cssMarquee {
+    overflow: hidden;
+    position: relative;
+    max-width: 90%;
+    height: 22px;
+
+    p {
+        margin: 0;
+        text-align: center;
+        transform: translateX(-100%);
+        animation: cssmarquee 5s linear infinite;
+        line-height: 25px;
+    }
+}

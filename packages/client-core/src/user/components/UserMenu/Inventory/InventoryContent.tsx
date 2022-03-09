@@ -179,8 +179,6 @@ const InventoryContent = ({
   }
 
   const moveItemToSlot = (oldSlot, newSlot) => {
-    console.log(`move slot`, oldSlot, newSlot)
-
     setItems((currentState) => {
       let newInventory = [...currentState]
       let targetIndex: any
@@ -189,7 +187,6 @@ const InventoryContent = ({
           targetIndex = index
         }
       })
-      console.error('targetIndex', targetIndex)
       newInventory[targetIndex] = { ...newInventory[targetIndex], slot: newSlot }
       return [...newInventory]
     })
