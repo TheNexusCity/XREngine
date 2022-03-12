@@ -607,7 +607,7 @@ export const AuthService = {
         .then((res: any) => {
           const identityProvider = res as IdentityProvider
           if (identityProvider.userId != null) {
-            AlertService.dispatchAlertSuccess(i18n.t('user:auth.magiklink.email-sent-msg'))
+            AlertService.dispatchAlertSuccess('Login Magic Link was sent. Please check your Email.')
             return AuthService.loadUserData(identityProvider.userId)
           }
         })
@@ -637,7 +637,7 @@ export const AuthService = {
         .then((res: any) => {
           const identityProvider = res as IdentityProvider
           if (identityProvider.userId != null) {
-            AlertService.dispatchAlertSuccess(i18n.t('user:auth.magiklink.sms-sent-msg'))
+            AlertService.dispatchAlertSuccess('Login Magic Link was sent. Please check your SMS.')
             return AuthService.loadUserData(identityProvider.userId)
           }
         })
