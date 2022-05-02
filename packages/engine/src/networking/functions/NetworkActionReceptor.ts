@@ -1,15 +1,17 @@
+import { none } from '@speigg/hookstate'
 import matches from 'ts-matches'
 
 import { UserId } from '@xrengine/common/src/interfaces/UserId'
-import { addActionReceptor, dispatchAction } from '@xrengine/hyperflux'
+import { addActionReceptor, dispatchAction, getState } from '@xrengine/hyperflux'
 
-// import { generatePhysicsObject } from '@xrengine/projects/default-project/PhysicsSimulationTestSystem'
 import { Engine } from '../../ecs/classes/Engine'
 import { World } from '../../ecs/classes/World'
 import { addComponent, getComponent, hasComponent, removeComponent } from '../../ecs/functions/ComponentFunctions'
 import { createEntity, removeEntity } from '../../ecs/functions/EntityFunctions'
+import { generatePhysicsObject } from '../../physics/functions/physicsObjectDebugFunctions'
 import { NetworkObjectAuthorityTag } from '../components/NetworkObjectAuthorityTag'
 import { NetworkObjectComponent } from '../components/NetworkObjectComponent'
+import { WorldState } from '../interfaces/WorldState'
 import { NetworkWorldAction } from './NetworkWorldAction'
 
 const removeAllNetworkClients = (world: World, removeSelf = false) => {
@@ -19,9 +21,6 @@ const removeAllNetworkClients = (world: World, removeSelf = false) => {
 }
 
 const addClient = (world: World, userId: UserId, name: string, index: number) => {
-  // host adds the client manually during connectToWorld
-  if (world.isHosting) return
-
   // set utility maps - override if moving through portal
   world.userIdToUserIndex.set(userId, index)
   world.userIndexToUserId.set(index, userId)
@@ -31,7 +30,7 @@ const addClient = (world: World, userId: UserId, name: string, index: number) =>
 
   world.clients.set(userId, {
     userId: userId,
-    userIndex: index,
+    index: index,
     name,
     subscribedChatUpdates: []
   })
@@ -40,19 +39,20 @@ const addClient = (world: World, userId: UserId, name: string, index: number) =>
 const removeClient = (world: World, userId: UserId, allowRemoveSelf = false) => {
   if (!world.clients.has(userId))
     return console.warn(`[NetworkActionReceptors]: tried to remove client with userId ${userId} that doesn't exit`)
-  if (!allowRemoveSelf && userId === Engine.userId)
+  if (!allowRemoveSelf && userId === Engine.instance.userId)
     return console.warn(`[NetworkActionReceptors]: tried to remove local client`)
 
   for (const eid of world.getOwnedNetworkObjects(userId)) {
     const { networkId } = getComponent(eid, NetworkObjectComponent)
-    world.store.actions.incoming.push(NetworkWorldAction.destroyObject({ $from: userId, networkId }))
+    const destroyObjectAction = NetworkWorldAction.destroyObject({ $from: userId, networkId })
+    destroyObject(world, destroyObjectAction)
   }
 
-  const { userIndex } = world.clients.get(userId)!
+  const { index: userIndex } = world.clients.get(userId)!
   world.userIdToUserIndex.delete(userId)
   world.userIndexToUserId.delete(userIndex)
   world.clients.delete(userId)
-  world.namedEntities.delete(userId)
+  world.store.actions.cached = world.store.actions.cached.filter((action) => action.$from !== userId)
 }
 
 const spawnObject = (world: World, action: ReturnType<typeof NetworkWorldAction.spawnObject>) => {
@@ -63,7 +63,7 @@ const spawnObject = (world: World, action: ReturnType<typeof NetworkWorldAction.
    */
   if (
     isSpawningAvatar &&
-    Engine.userId === action.$from &&
+    Engine.instance.userId === action.$from &&
     hasComponent(world.localClientEntity, NetworkObjectComponent)
   ) {
     const networkComponent = getComponent(world.localClientEntity, NetworkObjectComponent)
@@ -74,7 +74,7 @@ const spawnObject = (world: World, action: ReturnType<typeof NetworkWorldAction.
     return
   }
   const params = action.parameters
-  const isOwnedByMe = action.$from === Engine.userId
+  const isOwnedByMe = action.$from === Engine.instance.userId
   let entity
   if (isSpawningAvatar && isOwnedByMe) {
     entity = world.localClientEntity
@@ -96,8 +96,7 @@ const spawnObject = (world: World, action: ReturnType<typeof NetworkWorldAction.
     ownerId: action.$from,
     networkId: action.networkId,
     prefab: action.prefab,
-    parameters: action.parameters,
-    lastTick: 0
+    parameters: action.parameters
   })
 }
 
@@ -105,7 +104,7 @@ const spawnDebugPhysicsObject = (
   world: World,
   action: ReturnType<typeof NetworkWorldAction.spawnDebugPhysicsObject>
 ) => {
-  // generatePhysicsObject(action.config, action.config.spawnPosition, true, action.config.spawnScale)
+  generatePhysicsObject(action.config, action.config.spawnPosition, true, action.config.spawnScale)
 }
 
 const destroyObject = (world: World, action: ReturnType<typeof NetworkWorldAction.destroyObject>) => {
@@ -123,7 +122,7 @@ const requestAuthorityOverObject = (
   action: ReturnType<typeof NetworkWorldAction.requestAuthorityOverObject>
 ) => {
   // Authority request can only be processed by host
-  if (Engine.currentWorld.isHosting === false) return
+  if (Engine.instance.currentWorld.isHosting === false) return
 
   const ownerId = action.object.ownerId
   const entity = world.getNetworkObject(ownerId, action.object.networkId)
@@ -147,7 +146,7 @@ const transferAuthorityOfObject = (
   action: ReturnType<typeof NetworkWorldAction.transferAuthorityOfObject>
 ) => {
   // Transfer authority action can only be originated from host
-  if (action.$from !== Engine.currentWorld.hostId) return
+  if (action.$from !== Engine.instance.currentWorld.hostId) return
 
   const ownerId = action.object.ownerId
   const entity = world.getNetworkObject(ownerId, action.object.networkId)
@@ -156,9 +155,9 @@ const transferAuthorityOfObject = (
       `Warning - tried to get entity belonging to ${action.object.ownerId} with ID ${action.object.networkId}, but it doesn't exist`
     )
 
-  if (Engine.userId === action.newAuthor) {
+  if (Engine.instance.userId === action.newAuthor) {
     if (getComponent(entity, NetworkObjectAuthorityTag))
-      return console.warn(`Warning - User ${Engine.userId} already has authority over entity ${entity}.`)
+      return console.warn(`Warning - User ${Engine.instance.userId} already has authority over entity ${entity}.`)
 
     addComponent(entity, NetworkObjectAuthorityTag, {})
   } else {
@@ -167,11 +166,11 @@ const transferAuthorityOfObject = (
 }
 
 const setEquippedObject = (world: World, action: ReturnType<typeof NetworkWorldAction.setEquippedObject>) => {
-  if (Engine.currentWorld.isHosting === false) return
+  if (Engine.instance.currentWorld.isHosting === false) return
 
   if (action.equip) {
     dispatchAction(
-      Engine.currentWorld.store,
+      Engine.instance.currentWorld.store,
       NetworkWorldAction.requestAuthorityOverObject({
         object: action.object,
         requester: action.$from
@@ -179,13 +178,19 @@ const setEquippedObject = (world: World, action: ReturnType<typeof NetworkWorldA
     )
   } else {
     dispatchAction(
-      Engine.currentWorld.store,
+      Engine.instance.currentWorld.store,
       NetworkWorldAction.requestAuthorityOverObject({
         object: action.object,
-        requester: Engine.currentWorld.hostId
+        requester: Engine.instance.currentWorld.hostId
       })
     )
   }
+}
+
+const setUserTyping = (action) => {
+  matches(action).when(NetworkWorldAction.setUserTyping.matches, ({ $from, typing }) => {
+    getState(Engine.instance.currentWorld.store, WorldState).usersTyping[$from].set(typing ? true : none)
+  })
 }
 
 /**
@@ -195,11 +200,13 @@ const setEquippedObject = (world: World, action: ReturnType<typeof NetworkWorldA
 const createNetworkActionReceptor = (world: World) =>
   addActionReceptor(world.store, function NetworkActionReceptor(action) {
     matches(action)
-      .when(NetworkWorldAction.timeSync.matchesFromUser(world.hostId), ({ elapsedTime, clockTime }) => {
+      .when(NetworkWorldAction.timeSync.matches, ({ elapsedTime, clockTime }) => {
         // todo: smooth out time sync over multiple frames
         world.elapsedTime = elapsedTime + (Date.now() - clockTime) / 1000
       })
-      .when(NetworkWorldAction.createClient.matches, ({ $from, name, index }) => addClient(world, $from, name, index))
+      .when(NetworkWorldAction.createClient.matches, ({ $from, name, index: userIndex }) =>
+        addClient(world, $from, name, userIndex)
+      )
       .when(NetworkWorldAction.destroyClient.matches, ({ $from }) => removeClient(world, $from))
       .when(NetworkWorldAction.spawnObject.matches, (a) => spawnObject(world, a))
       .when(NetworkWorldAction.spawnDebugPhysicsObject.matches, (a) => spawnDebugPhysicsObject(world, a))
@@ -207,11 +214,11 @@ const createNetworkActionReceptor = (world: World) =>
       .when(NetworkWorldAction.requestAuthorityOverObject.matches, (a) => requestAuthorityOverObject(world, a))
       .when(NetworkWorldAction.transferAuthorityOfObject.matches, (a) => transferAuthorityOfObject(world, a))
       .when(NetworkWorldAction.setEquippedObject.matches, (a) => setEquippedObject(world, a))
+      .when(NetworkWorldAction.setUserTyping.matches, (a) => setUserTyping(a))
   })
 
 export const NetworkActionReceptor = {
   removeAllNetworkClients,
-
   addClient,
   removeClient,
   spawnObject,
@@ -220,6 +227,6 @@ export const NetworkActionReceptor = {
   requestAuthorityOverObject,
   transferAuthorityOfObject,
   setEquippedObject,
-
+  setUserTyping,
   createNetworkActionReceptor
 }
