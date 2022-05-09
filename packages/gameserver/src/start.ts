@@ -1,12 +1,28 @@
-import '@xrengine/engine/src/patchEngineNode'
-import { Application } from '@xrengine/server-core/declarations'
-import config from '@xrengine/server-core/src/appconfig'
-import logger from '@xrengine/server-core/src/logger'
+import AgonesSDK from '@google-cloud/agones-sdk'
+import { exec } from 'child_process'
 import fs from 'fs'
 import https from 'https'
 import psList from 'ps-list'
+
+import { pipe } from '@xrengine/common/src/utils/pipe'
+import { Network } from '@xrengine/engine/src/networking/classes/Network'
+import '@xrengine/engine/src/patchEngineNode'
+import { Application } from '@xrengine/server-core/declarations'
+import config from '@xrengine/server-core/src/appconfig'
+import {
+  configureK8s,
+  configureOpenAPI,
+  configureRedis,
+  configureSocketIO,
+  createFeathersExpressApp,
+  serverPipe
+} from '@xrengine/server-core/src/createApp'
+import logger from '@xrengine/server-core/src/logger'
+
+import channels from './channels'
+import { ServerTransportHandler, SocketWebRTCServerTransport } from './SocketWebRTCServerTransport'
+
 // import preloadLocation from './preload-location'
-import { createApp } from './app'
 
 /**
  * @param status
@@ -15,6 +31,20 @@ import { createApp } from './app'
 process.on('unhandledRejection', (error, promise) => {
   console.error('UNHANDLED REJECTION - Promise: ', promise, ', Error: ', error, ').')
 })
+
+const onSocketIO = (app: Application) => {
+  Network.instance.transportHandler = new ServerTransportHandler()
+  app.transport = new SocketWebRTCServerTransport(app)
+  app.transport.initialize()
+}
+
+export const instanceServerPipe = pipe(
+  configureOpenAPI(),
+  configureSocketIO(true, onSocketIO),
+  configureRedis(),
+  configureK8s()
+) as (app: Application) => Application
+
 export const start = async (): Promise<Application> => {
   const app = createFeathersExpressApp(instanceServerPipe)
 
