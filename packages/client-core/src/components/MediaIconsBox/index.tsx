@@ -39,6 +39,12 @@ import styles from './index.module.scss'
 interface Props {
   animate?: any
 }
+
+let soundFunction: Function | null = null
+export function setSoundFunction(fun: Function | null) {
+  soundFunction = fun
+}
+
 const MediaIconsBox = (props: Props) => {
   const [hasAudioDevice, setHasAudioDevice] = useState(false)
   const [hasVideoDevice, setHasVideoDevice] = useState(false)
@@ -84,6 +90,10 @@ const MediaIconsBox = (props: Props) => {
         ? 'instance'
         : user.partyId?.value || 'instance'
     if (isFaceTrackingEnabled.value) {
+      if (soundFunction) {
+        soundFunction(false)
+      }
+
       MediaStreams.instance.setFaceTracking(false)
       stopFaceTracking()
       stopLipsyncTracking()
@@ -91,6 +101,10 @@ const MediaIconsBox = (props: Props) => {
     } else {
       const mediaTransport = getMediaTransport()
       if (await configureMediaTransports(mediaTransport, ['video', 'audio'])) {
+        if (soundFunction) {
+          soundFunction(true)
+        }
+
         MediaStreams.instance.setFaceTracking(true)
         startFaceTracking()
         startLipsyncTracking()
